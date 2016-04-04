@@ -1,0 +1,66 @@
+<?php
+
+/**
+ * @file
+ * Honeypot Blacklister module, for blocking IPs exceeding a configurable
+ * threshold of Honeypot failures.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function honeypot_menu() {
+  $items['admin/config/content/honeypot-blacklister'] = array(
+    'title' => 'Honeypot Blacklister configuration',
+    'description' => 'Configure Honeypot Blacklister.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('honeypot_blacklister_admin_form'),
+    'access arguments' => array('administer honeypot'),
+    'file' => 'honeypot_blacklister.admin.inc',
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_honeypot_reject().
+ */
+function honeypot_blacklister_honeypot_reject($form_id, $uid, $type) {
+  $ip = ip_address();
+  honeypot_blacklister_add($uid, $ip);
+  if (honeypot_blacklister_count($uid, $ip) >= variable_get('honeypot_blacklister_count_threshold', 50)) {
+    honeypot_blacklister_add_to_blacklist($ip);
+  }
+}
+
+/**
+ * Add an IP to the blacklist.
+ */
+function honeypot_blacklister_add($uid, $ip) {
+  db_insert('honeypot_blacklister')
+    ->fields(array(
+      'uid' => $uid,
+      'ip' => $ip,
+      'timestamp' => REQUEST_TIME,
+    ))
+    ->execute();
+}
+
+/**
+ * Count the number of Honeypot rejections for a given IP and uid.
+ */
+function honeypot_blacklister_count($uid, $ip) {
+  $query = db_select('honeypot_blacklister')
+    ->condition('uid', $uid)
+    ->condition('ip', $ip);
+  return $query->countQuery()->execute()->fetchField();
+}
+
+/**
+ * Immediately add the IP to the system blacklist.
+ */
+function honeypot_blacklister_add_to_blacklist($ip) {
+  db_insert('blocked_ips')
+    ->fields(array('ip' => $ip))
+    ->execute();
+  watchdog('honeypot_blacklister', 'Banned IP address %ip', array('%ip' => $ip));
+}
