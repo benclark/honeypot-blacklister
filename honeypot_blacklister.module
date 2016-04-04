@@ -9,7 +9,7 @@
 /**
  * Implements hook_menu().
  */
-function honeypot_menu() {
+function honeypot_blacklister_menu() {
   $items['admin/config/content/honeypot-blacklister'] = array(
     'title' => 'Honeypot Blacklister configuration',
     'description' => 'Configure Honeypot Blacklister.',
