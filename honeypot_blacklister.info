@@ -1,0 +1,5 @@
+name = Honeypot Blacklister
+description = "Block IPs exceeding a configurable threshold of Honeypot failures."
+core = 7.x
+configure = admin/config/content/honeypot-blacklister
+package = "Spam control"
